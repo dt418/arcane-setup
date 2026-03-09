@@ -1,0 +1,38 @@
+services:
+  arcane:
+    image: ghcr.io/getarcaneapp/arcane:latest
+    container_name: arcane
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - arcane-data:/app/data
+      - /opt/projects:/app/data/projects
+    environment:
+      - APP_URL=${APP_URL}
+      - PUID=1000
+      - PGID=1000
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+    cap_drop:
+      - ALL
+    restart: unless-stopped
+    networks:
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.managed=true
+      - traefik.docker.network=proxy
+
+      # Router
+      - traefik.http.routers.arcane.entrypoints=web
+      - traefik.http.routers.arcane.rule=Host(`arcane.danhthanh.dev`)
+      - traefik.http.routers.arcane.middlewares=sslheader@docker,authelia@docker
+
+      # Service
+      - traefik.http.services.arcane.loadbalancer.server.port=3552
+
+networks:
+  proxy:
+    external: true
+
+volumes:
+  arcane-data:
